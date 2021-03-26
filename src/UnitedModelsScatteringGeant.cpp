@@ -163,7 +163,7 @@ void simulationSingleScattering() {
   std::cout << "The expected Cherenkov angle should be at theta = " << TMath::ACos(cherenkov->GetCherenkovCos()) << std::endl;
   
   // Set up number of bins
-  double binsn = 1000;
+  double binsn = 100;
   cherenkov->SetNBins(binsn);
 
   cherenkov->SetWaveLenght(410 * 1e-7);
@@ -176,7 +176,7 @@ void simulationSingleScattering() {
    "Integral Result sum CoherentDedricksModel Im; #theta; Integral result im part" , cherenkov->GetNBins(), 0, TMath::Pi());
 
   // Defining number if bins in squared (final power) histogram
-  double suaredHistBins = 1000;
+  double suaredHistBins = 100;
   TH1D* hPowerRadiatedSquared = new TH1D("hPowerRadiatedSquared",
    "Power Radiated CoherentMyModel; #theta; Power (normalized)" , suaredHistBins, 0, TMath::Pi());
 
@@ -206,7 +206,7 @@ void simulationSingleScattering() {
       geantStep stepEnd = track.at(iGeantStep + 1);
 
       // Threshold for Cherenkov radiation
-      // cherenkov->SetMomentum(stepBeg.p);
+      cherenkov->SetMomentum(stepBeg.p);
       // if (cherenkov->GetBeta() < 1./cherenkov->GetRefractiveIndex()) break;
 
       // Loop through angles of observation
@@ -221,12 +221,14 @@ void simulationSingleScattering() {
         hPowerRadiatedIm->Fill(theta, resultPower.Im());
 
       }
+      std::cout << "Last beta " << cherenkov->GetBeta() << std::endl;
+
 
       // Adding a time for the step
       currentTime += (stepEnd.coordinates - stepBeg.coordinates).Mag() / cherenkov->GetVelocity();
       // double energyLoses = calculateEnergyLoses(cherenkov) * scattering.GetStepLength();
 
-      } // End of loop through angles
+      } 
 
     // Loop through angles of observation and square the result for the track
     for (int i = 0; i < cherenkov->GetNBins(); i++) {
@@ -255,7 +257,7 @@ void simulationSingleScattering() {
   std::cout << "Last beta " << cherenkov->GetBeta() << std::endl;
 
   // std::string outpotFilename = "histograms_output/CherenkovSimulation_wCorrection_q" + std::to_string(qMultiplier) + "_part_" + std::to_string(inputNumber) + ".root";
-  std::string outputFilename = "Single_scattering_1MeV_1000tracks_full_1000bins_test_fixes_wo_trsh.root";
+  std::string outputFilename = "Single_scattering_1MeV_1000tracks_full_1000bins_test_fixes_wo_trsh_test.root";
   TFile* outputFile = new TFile(outputFilename.c_str(), "recreate");  
   outputFile->cd();
 
