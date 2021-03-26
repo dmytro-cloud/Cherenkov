@@ -21,23 +21,15 @@ public:
   ~CherenkovRadiationModels() {};
 
   /**
-   Set energy in MeV
-   */
-  void SetEnergy(double energy_) {
-    energy = energy_;
-  }
-
-  /**
-   Get energy in MeV
-   */
-  double GetEnergy() const {
-    return energy;
-  }
-
+    Get momentum in MeV/c
+    */
   double GetMomentum() const {
     return momentum;
   }
 
+  /**
+    Set momentum in MeV/c
+    */
   void SetMomentum(double momentum_) {
     momentum = momentum_;
   }
@@ -178,24 +170,25 @@ public:
   }
 
   /** 
-    Calculates distance to te point (L) and theta in the particle movement system.
+    Calculates distance to te point (L) and theta in the particle's system.
     Default: 1D with phi=0
     */
   std::pair<double, double> AngleTransform(double cos, TVector3 initialPosition,
      TVector3 nextPosition, double phi=0.) const;
 
   /**
-    Second analitical formula to calcualte differentail density of power
-    Irradiated by charge particle that moves in the volume
+    Actually, almost the same that Geant4 does but taking into account the finite length of step
     */
   double CoherentMyModel(double cos, TVector3 initialPosition, TVector3 nextPosition,
    double phi=0., bool returnSquared=true, bool SI=false);
 
   /**
-    First Karin's analitical formula to calcualte differentail density of power
-    Irradiated by charge particle that moves in the volume
+    CURRENTLY IN USE
+    Modified Dedrick's analitical formula to calcualte differential density of power
+    Irradiated by charge particle that moves in the volume. Considers the waves itself.
+    Returns complex value for the wave created during the step.
     */
-  TComplex CoherentKarinsModel(double cos, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
+  TComplex CoherentDedricksModel(double cos, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
    double phi=0., bool returnSquared = true);
 
   /** 
@@ -206,12 +199,6 @@ public:
    double phi=0., bool returnSquared = true);
 
   /**
-    Geant4 like simulation
-  **/
-  double Geant4like(double cos, TVector3 initialPosition, TVector3 nextPosition,
-       double phi = 0);
-
-  /**
    Save the currently drawn histogram, in png and .C formats. The plot
    Will be placed in the appropriate directory.
    */
@@ -220,6 +207,7 @@ public:
   /**
     It parses Geant4 output
     TODO: IMPROVE PARSE AND GEANT4 OUTPUT
+    FIX: already implemented in ParticleScattering.h
   */
   std::vector<TVector3> ParseGeantFile(std::ifstream& stream);
 
@@ -228,8 +216,8 @@ private:
   static constexpr double electronCharge = 1.602e-19 * c / 10; // Fr (statC) 
 
     /*  Unit system: Gauss */
-  double energy = 5; // MeV
-  double momentum = 5; // Mev
+  // double energy = 5; // MeV
+  double momentum = 5; // MeV / c
   double mass = 0.511; // Mass of particle in MeV
 
   // Fix omega for now
@@ -238,6 +226,7 @@ private:
   // Fix n for now (depends on omega)
   double n = 1.33;
 
+  // Deprecated. Some variables for sin trajectory idea
   /* Amplitude for 2D scattering of partice */
   double amplitude2D = GetWaveLength() / 10;
   /* Frequency of interactions of electron with matter for L-distance */

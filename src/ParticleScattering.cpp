@@ -5,7 +5,7 @@
 
 #include <TMath.h>
 
-/* Started to implement class that can
+/* Class that can
   follow geant trajectory  */
 
 ParticleScattering::ParticleScattering(CherenkovRadiationModels* ch_) :
@@ -41,9 +41,9 @@ double ParticleScattering::calculateQ() {
   double ne = 1000/m_w * n_A * nElectrons; // N/m^3
   double wp = TMath::Sqrt( charge * charge * ne / 9.1e-31 / eps_0  );
 
-  double energyDependentPart = TMath::Power(ch->GetEnergy() / m_e , 2) * 
+  double energyDependentPart = TMath::Power(ch->GetMomentum() / m_e , 2) * 
     ch->GetBeta() * TMath::Log(137 * TMath::Power(Z, -1./3)) / 
-    TMath::Power( TMath::Power(1 + ch->GetEnergy()/ m_e , 2) - 1, 2);
+    TMath::Power( TMath::Power(1 + ch->GetMomentum()/ m_e , 2) - 1, 2);
     double result = Z * wp * wp * re * energyDependentPart / c;
     // std::cout << "Q: " << result << std::endl;
   return qMultiplier * result;
@@ -87,7 +87,7 @@ void ParticleScattering::ParseTrajectory(std::string filename, int numberOfElect
     tmp.SetY(y / 10);  
     tmp.SetZ(z / 10);
     stepInfo.coordinates = tmp;
-    stepInfo.p = p; //transfromPtoE(p);
+    stepInfo.p = p;
     electron.push_back(stepInfo);
   }
 

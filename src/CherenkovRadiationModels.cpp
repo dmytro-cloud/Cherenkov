@@ -1,7 +1,7 @@
 #include "CherenkovRadiationModels.h"
 #include <cmath>
 
-//Overloading operator << for TVector3 
+//Overloading operator << for TVector3 for convinient writing into the stream
 std::ofstream& operator<<(std::ofstream& os, const TVector3& v) {
   os << v.X() << "\t" << v.Y() << "\t" << v.Z() << "\n";
   return os;
@@ -37,6 +37,9 @@ double CherenkovRadiationModels::GetCherenkovCos() const {
   return GetLightSpeed() / (GetVelocity() * GetRefractiveIndex());
 }
 
+/**
+  Some vector algebra to find angle between track direction and observation point
+  */
 std::pair<double, double> CherenkovRadiationModels::AngleTransform(double angle, TVector3 initialPosition,
    TVector3 nextPosition, double phi) const{
 
@@ -51,7 +54,7 @@ std::pair<double, double> CherenkovRadiationModels::AngleTransform(double angle,
   spherePosition.SetMag(sphereR);
   spherePosition.SetTheta(angle);
   spherePosition.SetPhi(phi);
-  // In suggestion that radiation comes from the beggining of step
+  // Radiation comes from the beginning of step
   auto deltaVector = spherePosition - initialPosition;
   double obsL = deltaVector.Mag();
 
@@ -60,6 +63,9 @@ std::pair<double, double> CherenkovRadiationModels::AngleTransform(double angle,
   return std::make_pair(obsL, angleInParticleSystem);
 }
 
+/**
+  Actually, almost the same that Geant4 does but taking into account the finite length of step
+  */
 double CherenkovRadiationModels::CoherentMyModel(double theta, TVector3 initialPosition, TVector3 nextPosition,
        double phi /* = 0 default*/, bool returnSquared /* = true default*/, bool SI) {
   
@@ -77,7 +83,13 @@ double CherenkovRadiationModels::CoherentMyModel(double theta, TVector3 initialP
   return resultPower;
 }
 
-TComplex CherenkovRadiationModels::CoherentKarinsModel(double theta, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
+/**
+  CURRENTLY IN USE
+  Modified Dedrick's analitical formula to calcualte differential density of power
+  Irradiated by charge particle that moves in the volume. Considers the waves itself.
+  Returns complex value for the wave created during the step.
+  */
+TComplex CherenkovRadiationModels::CoherentDedricksModel(double theta, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
         double phi /* = 0 default*/, bool returnSquared /* = true default*/) {
   double time = currentTime; // time of start of step
   auto [obsL, angleInParticleSystem] = AngleTransform(theta, initialPosition, nextPosition, phi);
@@ -99,7 +111,7 @@ TComplex CherenkovRadiationModels::CoherentKarinsModel(double theta, TVector3 in
   double realI2 = I2.Re();
   TComplex power = TComplex(-999, -999);
 
- // Remove L dependency (should be before integrals sum)
+ // Remove L dependency (?) (should be before integrals sum)
   if (returnSquared){
     power = GetWaveVector()*GetWaveVector() / (2*TMath::Pi()*c*obsL*obsL) * I2; // Needs n?
   } else {
@@ -150,23 +162,6 @@ double CherenkovRadiationModels::CoherentSinusoidalModel(double theta, TVector3 
   return resultPower;
 }
 
-double CherenkovRadiationModels::Geant4like(double theta, TVector3 initialPosition, TVector3 nextPosition, double phi /* = 0 default*/){
-
-  auto [obsL, angleInParticleSystem] = AngleTransform(theta, initialPosition, nextPosition, phi);
-  double stepLength = 100;
-
-  // Build up an expression
-  double bracketsExpr = 1/GetVelocity() - n * TMath::Cos(angleInParticleSystem)/c;
-  double sinAndDenominator = TMath::Sin(angleInParticleSystem) * TMath::Sin(GetOmega() * stepLength * bracketsExpr / 2) / bracketsExpr;
-  double resultPower = sinAndDenominator * sinAndDenominator;
-
-  if ( TMath::Cos(angleInParticleSystem) > GetCherenkovCos() + 0.001 || TMath::Cos(angleInParticleSystem) < GetCherenkovCos() - 0.001 ) resultPower = 0;
-  else resultPower = 1;
-
-  return resultPower;
-
-}
-
 void CherenkovRadiationModels::PrintDrawnHistogram(TCanvas* gCanvas, const char* basename){
   // mkdir("plots", 0777);
   std::string plotName = "plots/scattered";
@@ -185,7 +180,7 @@ void CherenkovRadiationModels::PrintDrawnHistogram(TCanvas* gCanvas, const char*
   // gCanvas->Print(cName.c_str());
 }
 
-/* Preliminary implementation for simple file */
+/* Deprecated but still needed by 2D simulation */
 std::vector<TVector3> CherenkovRadiationModels::ParseGeantFile(std::ifstream& stream) {
   std::vector<TVector3> allCoordinates;
   double x, y, z;
