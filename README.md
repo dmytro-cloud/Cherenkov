@@ -1,7 +1,7 @@
 # Cherenkov
 
 To compile it you need to have root 6.16+.
-Run make in the root directory.
+Run make in the root of repo's directory.
 
 Then you have to run
 root UnitedModelsScatteringGeant.so
