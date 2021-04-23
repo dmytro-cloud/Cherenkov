@@ -115,7 +115,7 @@ TComplex CherenkovRadiationModels::CoherentDedricksModel(double theta, TVector3 
   if (returnSquared){
     power = GetWaveVector()*GetWaveVector() / (2*TMath::Pi()*c*obsL*obsL) * I2; // Needs n?
   } else {
-    power = GetRefractiveIndex() * GetWaveVector() / ( TMath::Sqrt(2 * TMath::Pi() * c) * obsL ) * I;
+    power = TMath::Sqrt( GetRefractiveIndex() ) * GetWaveVector() / ( TMath::Sqrt(2 * TMath::Pi() * c) * obsL ) * I;
   }
 
   return power;
