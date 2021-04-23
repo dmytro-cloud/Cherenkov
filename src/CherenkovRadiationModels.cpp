@@ -90,14 +90,14 @@ double CherenkovRadiationModels::CoherentMyModel(double theta, TVector3 initialP
   Returns complex value for the wave created during the step.
   */
 TComplex CherenkovRadiationModels::CoherentDedricksModel(double theta, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
-        double phi /* = 0 default*/, bool returnSquared /* = true default*/) {
+        double phi /* = 0 default*/, bool returnSquared /* = false default*/) {
   double time = currentTime; // time of start of step
   auto [obsL, angleInParticleSystem] = AngleTransform(theta, initialPosition, nextPosition, phi);
   double observedAngle = theta;
   double stepLength = (nextPosition - initialPosition).Mag();
   
   // Build up expression for the integral
-  double normalization = TMath::Sin(angleInParticleSystem) / TMath::Power(2*TMath::Pi(), 2);
+  double normalization = electronCharge * TMath::Sin(angleInParticleSystem) / 2 / TMath::Pi();
   double exp1 = GetOmega() * time - GetRefractiveIndex() * GetWaveVector() * ( initialPosition.X() * TMath::Sin(observedAngle) * TMath::Cos(phi) + 
     initialPosition.Y() * TMath::Sin(observedAngle) * TMath::Sin(phi) + initialPosition.Z() * TMath::Cos(theta) );//position.Dot(obsDir.Unit());
   double exp2 = GetOmega() * stepLength * (1/GetVelocity() - n * TMath::Cos(angleInParticleSystem)/ GetLightSpeed());
@@ -115,7 +115,7 @@ TComplex CherenkovRadiationModels::CoherentDedricksModel(double theta, TVector3 
   if (returnSquared){
     power = GetWaveVector()*GetWaveVector() / (2*TMath::Pi()*c*obsL*obsL) * I2; // Needs n?
   } else {
-    power = GetWaveVector() / ( TMath::Sqrt(2 * TMath::Pi() * c)  * obsL ) * I;
+    power = GetRefractiveIndex() * GetWaveVector() / ( TMath::Sqrt(2 * TMath::Pi() * c) * obsL ) * I;
   }
 
   return power;
