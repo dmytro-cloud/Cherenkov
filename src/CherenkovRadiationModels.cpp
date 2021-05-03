@@ -63,6 +63,20 @@ std::pair<double, double> CherenkovRadiationModels::AngleTransform(double angle,
   return std::make_pair(obsL, angleInParticleSystem);
 }
 
+std::pair<double, double> CherenkovRadiationModels::AngleTransform_2(double angle, TVector3 initialPosition,
+    TVector3 nextPosition, double phi) const{
+
+  auto particleMovementVector = nextPosition - initialPosition;
+  double phi_nu = particleMovementVector.Phi();
+  double theta_nu = particleMovementVector.Theta();
+
+  double obsL = GetSphereR();
+  double cosine = TMath::Cos(theta_nu) * TMath::Cos(angle) + TMath::Sin(angle) * TMath::Sin(theta_nu) * TMath::Cos(phi - phi_nu);
+  double ang = std::acos(cosine);
+  return std::make_pair(obsL, ang);
+
+}
+
 /**
   Actually, almost the same that Geant4 does but taking into account the finite length of step
   */
@@ -113,7 +127,7 @@ TComplex CherenkovRadiationModels::CoherentDedricksModel(double theta, TVector3 
 
  // Remove L dependency (?) (should be before integrals sum)
   if (returnSquared){
-    power = GetWaveVector()*GetWaveVector() / (2*TMath::Pi()*c*obsL*obsL) * I2; // Needs n?
+    power = GetWaveVector()*GetWaveVector() * GetRefractiveIndex() / (2*TMath::Pi()*c*obsL*obsL) * I2; // Needs n?
   } else {
     power = TMath::Sqrt( GetRefractiveIndex() ) * GetWaveVector() / ( TMath::Sqrt(2 * TMath::Pi() * c) * obsL ) * I;
   }
