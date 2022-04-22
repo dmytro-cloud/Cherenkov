@@ -23,5 +23,7 @@
 #pragma link C++ function simulationFromGeantTrajectory;
 #pragma link C++ function simulationFromOwnTrajectory;
 #pragma link C++ function simulationSingleScattering;
+#pragma link C++ function calculate_light_output;
+#pragma link C++ function runSimulation2D_default;
 
 #endif

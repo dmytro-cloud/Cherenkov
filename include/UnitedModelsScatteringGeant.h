@@ -17,6 +17,8 @@
     */
 void runSimulation2D();
 
+void runSimulation2D_default();
+
 /**
   Deprecated and removed from .cpp
   */
@@ -48,3 +50,8 @@ void simulationFromOwnTrajectory(double stepLength, double qMultiplier, int inpu
   Name of the input and output file as the number of bins and tracks are hard-coded.
   */
 void simulationSingleScattering();
+
+/** 
+  Function to calculate full light output
+  */
+void calculate_light_output();

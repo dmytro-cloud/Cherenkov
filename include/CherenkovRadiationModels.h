@@ -173,7 +173,13 @@ public:
     Calculates distance to te point (L) and theta in the particle's system.
     Default: 1D with phi=0
     */
-  std::pair<double, double> AngleTransform(double cos, TVector3 initialPosition,
+  std::pair<double, double> AngleTransform(double angle, TVector3 initialPosition,
+     TVector3 nextPosition, double phi=0.) const;
+
+   /** 
+    As in Dedrick
+    */
+  std::pair<double, double> AngleTransform_2(double angle, TVector3 initialPosition,
      TVector3 nextPosition, double phi=0.) const;
 
   /**
@@ -189,7 +195,7 @@ public:
     Returns complex value for the wave created during the step.
     */
   TComplex CoherentDedricksModel(double cos, TVector3 initialPosition, TVector3 nextPosition, double currentTime,
-   double phi=0., bool returnSquared = true);
+   double phi=0., bool returnSquared = false);
 
   /** 
     Formula with sinus aproximation of particle movement for scattering.
@@ -212,8 +218,8 @@ public:
   std::vector<TVector3> ParseGeantFile(std::ifstream& stream);
 
 private:
-  static constexpr double c = 3e10; // cm/s
-  static constexpr double electronCharge = 1.602e-19 * c / 10; // Fr (statC) 
+  static constexpr double c = 29979245800; // cm/s
+  static constexpr double electronCharge = 1.602e-19*c/10; // Fr (statC) 
 
     /*  Unit system: Gauss */
   // double energy = 5; // MeV

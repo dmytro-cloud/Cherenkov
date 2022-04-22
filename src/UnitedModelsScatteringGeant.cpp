@@ -43,6 +43,9 @@ void runSimulation2D() {
   CherenkovRadiationModels cherenkov;
   //Show beta
   std::cout << "Beta: " << cherenkov.GetBeta() << std::endl;
+  cherenkov.SetMomentum(0.629761);
+  cherenkov.SetWaveLenght(400 * 1e-7);
+  cherenkov.SetRefractiveIndex(1.33668);
 
   // The Cherenkov Radiation Description.
   std::cout << "The expected Cherenkov angle should be at cos(theta) = " << cherenkov.GetCherenkovCos() << std::endl;
@@ -56,7 +59,7 @@ void runSimulation2D() {
   std::string fileNameCoordinates = "geant4coordinates/" + std::to_string(int(cherenkov.GetMomentum())) + "MeVElectron.txt";
   bool test = true;
   if ( test ) {
-    std::string testFileName = "geant4coordinates/" + std::to_string(0) + "MeVElectronTest.txt";
+    std::string testFileName = "electronTrajectories/testing2.txt";
     fileNameCoordinates = testFileName;
   }
 
@@ -117,7 +120,7 @@ void runSimulation2D() {
   std::cout << "Integral: " << hPowerRadiated2->Integral();
 
   TH1D* hPowerRadiatedSquared = new TH1D("hPowerRadiatedSquared",
-   "Power Radiated CoherentMyModel; #theta; dP/d#omega" , cherenkov.GetNBins(), 0, 3.14);// TMath::Pi());
+   "Power Radiated CoherentMyModel; #theta; dP/d#omega" , cherenkov.GetNBins(), 0, TMath::Pi());// 
 
     // Loop through angles of observation and square the result
   for (int i = 0; i < cherenkov.GetNBins(); i++) {
@@ -126,7 +129,7 @@ void runSimulation2D() {
     double im = hPowerRadiated->GetBinContent(i+1);
     double re = hPowerRadiated2->GetBinContent(i+1);
     double resultIntegral = re * re + im * im;
-    hPowerRadiatedSquared->Fill(theta, resultIntegral);      
+    hPowerRadiatedSquared->Fill(theta, resultIntegral * TMath::Sin(theta));      
   } // End of loop through angles
 
   // hPowerRadiated->SetMarkerStyle(kFullTriangleDown);
@@ -139,10 +142,113 @@ void runSimulation2D() {
 
   gPad->BuildLegend();
 
-  std::string fileName = "CherenkovScatteredTrackGeantSinusoidal_" + std::to_string(cherenkov.GetMomentum())
-   + "MeV_" + std::to_string(cherenkov.GetNBins()) + "bins_" + std::to_string(nsteps - 1) + "Steps";
-  cherenkov.PrintDrawnHistogram(gCanvas, fileName.data());
+  // std::string fileName = "Cherenkov_test_2D";
+  // cherenkov.PrintDrawnHistogram(gCanvas, fileName.data());
+  std::string outputFilename = "Cherenkov_test_2D.root";
+  TFile* outputFile = new TFile(outputFilename.c_str(), "recreate");
+  outputFile->cd();
+
+  hPowerRadiatedSquared->Write();
+  outputFile->Close();
 }
+
+/**
+  Simple 2D simulationSingleScattering with given number of steps
+  */
+void runSimulation2D_default() {
+  CherenkovRadiationModels cherenkov;
+  //Show beta
+  cherenkov.SetMomentum(0.629761);
+  cherenkov.SetWaveLenght(400 * 1e-7);
+  cherenkov.SetRefractiveIndex(1.33668);
+  std::cout << "Beta: " << cherenkov.GetBeta() << std::endl;
+
+  // The Cherenkov Radiation Description.
+  std::cout << "The expected Cherenkov angle should be at cos(theta) = " << cherenkov.GetCherenkovCos() << std::endl;
+  double binsn;
+  std::cin >> binsn;
+  cherenkov.SetNBins(binsn);
+  double currentTime = 0;
+
+  // File to write coordinates of particle
+  std::ifstream file;
+  std::string fileNameCoordinates = "electronTrajectories/" + std::to_string(int(cherenkov.GetMomentum())) + "MeVElectron.txt";
+  bool test = true;
+  if ( test ) {
+    std::string testFileName = "electronTrajectories/testing2.txt";
+    fileNameCoordinates = testFileName;
+  }
+
+  std::cout << "File name: " << fileNameCoordinates << std::endl;
+  file.open(fileNameCoordinates.data());
+  std::vector<TVector3> allCoordinates = cherenkov.ParseGeantFile(file);
+  int nsteps = allCoordinates.size(); // In fact number of steps is n - 1
+  std::cout << "Steps: " << nsteps - 1 << std::endl;
+  // Set initial position
+  TVector3 particlePosition = allCoordinates.at(0);
+
+  TH1D* hPowerRadiatedSquared = new TH1D("hPowerRadiatedSquared",
+ "Power Radiated CoherentMyModel; #theta; dP/d#omega" , cherenkov.GetNBins(), 0, TMath::Pi());
+  // double partitionOfLambda, partitionOfOmega;
+  // std::cout << "Input a and omegaY" << std::endl;
+  // std::cin >> partitionOfLambda >> partitionOfOmega;
+  // cherenkov.SetAmplitude2D(cherenkov.GetWaveLength() * partitionOfLambda);
+  // cherenkov.SetOmegaY(cherenkov.GetOmega() * partitionOfOmega);
+
+ // Now it is moving with a stepLength and without energy loses
+ // light emission is considered to be from the begining point of each line
+  for (int j = 1; j < nsteps; j++) {
+    TVector3 nextParticlePosition = allCoordinates.at(j);
+    
+    // Loop through angles of observation
+    for (int i = 0; i < cherenkov.GetNBins(); i++) {
+      double theta = hPowerRadiatedSquared->GetXaxis()->GetBinCenter(i+1);
+
+      TComplex resultPower = cherenkov.CoherentMyModel(theta, particlePosition, nextParticlePosition, 0., true, false);
+      hPowerRadiatedSquared->Fill(theta, resultPower * TMath::Sin(theta));
+      // if (cos > 0.755 && cos < 0.7552 && cos > 2) {
+      //   std::cout << "Cos++: " << cos + 2./1000000 << " PowerIm: " << cherenkov.CoherentDedricksModel(cos + 2./1000000, particlePosition, nextParticlePosition, currentTime, 0., false).Im() << "\n";   
+      //   std::cout << "Cos+: " << cos + 1./1000000 << " PowerIm: " << cherenkov.CoherentDedricksModel(cos + 1./1000000, particlePosition, nextParticlePosition, currentTime, 0., false).Im() << "\n";   
+      //   std::cout << "Cos: " << cos << " PowerIm: " << resultPower.Im() << "\n";
+      //   std::cout << "Cos-: " << cos - 1./1000000 << " PowerIm: " << cherenkov.CoherentDedricksModel(cos - 1./1000000, particlePosition, nextParticlePosition, currentTime, 0., false).Im() << "\n";   
+      //   std::cout << "Cos--: " << cos - 2./1000000 << " PowerIm: " << cherenkov.CoherentDedricksModel(cos - 2./1000000, particlePosition, nextParticlePosition, currentTime, 0., false).Im() << "\n";   
+      //   std::cout << "###" << std::endl;
+      // }
+      // double resultPower2 = cherenkov.CoherentMyModel(cos, particlePosition, nextParticlePosition);
+
+    } // End of loop through angles
+
+    particlePosition = nextParticlePosition;
+  }
+
+  TCanvas* gCanvas = nullptr;
+  // Make plots square
+  Double_t w = 1000;
+  Double_t h = 800;
+  gCanvas = new TCanvas("gCanvas", "gCanvas", w, h);
+  // gCanvas->SetLogy();
+  gStyle->SetOptTitle(kFALSE);
+  gStyle->SetOptStat(0);
+  gStyle->SetPalette(kDeepSea);
+
+
+  // hPowerRadiated->SetMarkerStyle(kFullTriangleDown);
+  // // hPowerRadiated->Draw("PLC PMC");
+  // hPowerRadiated->SetLineColor(kRed);
+  // hPowerRadiated->SetMarkerStyle(kFullCircle);
+  // hPowerRadiated->Draw("HIST"); 
+  // hPowerRadiated2->Draw("SAMEHIST"); 
+  hPowerRadiatedSquared->Draw("HIST");
+
+  gPad->BuildLegend();
+  std::string outputFilename = "Cherenkov_test_2D_square.root";
+  TFile* outputFile = new TFile(outputFilename.c_str(), "recreate");
+  outputFile->cd();
+
+  hPowerRadiatedSquared->Write();
+  outputFile->Close();
+}
+
 
 
 /**
@@ -154,7 +260,9 @@ void simulationSingleScattering() {
   // Creating the CherenkovRadiationModels instance and tie it with scattering class
   CherenkovRadiationModels *cherenkov = new CherenkovRadiationModels;
   auto scattering = ParticleScattering(cherenkov);
-  scattering.ParseTrajectory("electronTrajectories/Trajectory_coordinates_03MeV_1500_P.txt", 1500);
+  scattering.ParseTrajectory("electronTrajectories/testing.txt", 3000);
+
+  // scattering.ParseTrajectory("electronTrajectories/Trajectory_coordinates_SS_400nm_03MeV.txt", 3000);
 
   //Show beta
   std::cout << "Beta: " << cherenkov->GetBeta() << std::endl;
@@ -163,11 +271,12 @@ void simulationSingleScattering() {
   std::cout << "The expected Cherenkov angle should be at theta = " << TMath::ACos(cherenkov->GetCherenkovCos()) << std::endl;
   
   // Set up number of bins
-  double binsn = 100;
+  double binsn = 10000;
   cherenkov->SetNBins(binsn);
 
-  cherenkov->SetWaveLenght(410 * 1e-7);
+  cherenkov->SetWaveLenght(400 * 1e-7);
   cherenkov->SetRefractiveIndex(1.33668);
+  std::cout << cherenkov->GetOmega() << std::endl;
 
   // Creating histograms for real and complex part
   TH1D* hPowerRadiatedRe = new TH1D("hPowerRadiatedReal",
@@ -176,7 +285,7 @@ void simulationSingleScattering() {
    "Integral Result sum CoherentDedricksModel Im; #theta; Integral result im part" , cherenkov->GetNBins(), 0, TMath::Pi());
 
   // Defining number if bins in squared (final power) histogram
-  double suaredHistBins = 100;
+  double suaredHistBins = 10000;
   TH1D* hPowerRadiatedSquared = new TH1D("hPowerRadiatedSquared",
    "Power Radiated CoherentMyModel; #theta; Power (normalized)" , suaredHistBins, 0, TMath::Pi());
 
@@ -258,8 +367,13 @@ void simulationSingleScattering() {
 
   std::cout << "Last beta " << cherenkov->GetBeta() << std::endl;
 
+  hPowerRadiatedSquared->Draw("HIST");
+
+
   // std::string outpotFilename = "histograms_output/CherenkovSimulation_wCorrection_q" + std::to_string(qMultiplier) + "_part_" + std::to_string(inputNumber) + ".root";
-  std::string outputFilename = "Single_scattering_03MeV_1500tracks_full_100bins_P.root";
+  // std::string outputFilename = "Single_scattering_03MeV_full_100bins_400nm.root";
+  std::string outputFilename = "Cherenkov_test_2D_model.root";
+
   TFile* outputFile = new TFile(outputFilename.c_str(), "recreate");
   outputFile->cd();
 
@@ -281,17 +395,21 @@ void calculate_light_output(){
    1.33378, 1.33301, 1.33231, 1.33167, 1.33108, 1.33054, 1.33004,
    1.32957, 1.32914, 1.32874, 1.32836, 1.32801, 1.32768};
 
-  std::string outputFilename = "SS_0_3MeV_1500tracks_allwavelengths_fix.root";
+  // std::string outputFilename = "SS_03MeV_1500tracks_allwavelengths_fixk.root";
+  std::string outputFilename = "all_wavelengths_05MeV_1000bins.root";
+
   TFile* outputFile = new TFile(outputFilename.c_str(), "recreate");
   outputFile->cd();
 
      // Creating the CherenkovRadiationModels instance and tie it with scattering class
   CherenkovRadiationModels *cherenkov = new CherenkovRadiationModels;
   auto scattering = ParticleScattering(cherenkov);
-  scattering.ParseTrajectory("electronTrajectories/Trajectory_coordinates_03MeV_1500_P.txt", 1500);
+  // scattering.ParseTrajectory("electronTrajectories/Trajectory_coordinates_03MeV_1500_P.txt", 3000);
+  scattering.ParseTrajectory("electronTrajectories/Trajectory_coordinates_05MeV_1500_P.txt", 3000);
+
   
   // Set up number of bins
-  double binsn = 100;
+  double binsn = 1000;
   cherenkov->SetNBins(binsn);
 
   for (size_t iRI = 0; iRI < wavelengthVector.size(); ++iRI){
@@ -306,7 +424,7 @@ void calculate_light_output(){
      "Integral Result sum CoherentDedricksModel Im; #theta; Integral result im part" , cherenkov->GetNBins(), 0, TMath::Pi());
 
     // Defining number if bins in squared (final power) histogram
-    double suaredHistBins = 100;
+    double suaredHistBins = 10000;
     std::string outputHistName = "hPowerRadiatedSquared_" + std::to_string(wavelengthVector.at(iRI));
     TH1D* hPowerRadiatedSquared = new TH1D(outputHistName.data(),
      "Power Radiated CoherentMyModel; #theta; Power (normalized)" , suaredHistBins, 0, TMath::Pi());
@@ -373,7 +491,7 @@ void calculate_light_output(){
         // Correct-factor S~R^2
         // Only sin
         // hPowerRadiatedSquared->Fill(theta, resultIntegral * TMath::Sin(theta) * TMath::Sin(theta));
-        hPowerRadiatedSquared->Fill(theta, resultIntegral * TMath::Sin(theta));
+        hPowerRadiatedSquared->Fill(theta, resultIntegral * TMath::Sin(theta) * suaredHistBins / binsn);
       }
 
       // Reseting the histograms with Re and Im part

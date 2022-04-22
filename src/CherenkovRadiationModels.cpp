@@ -90,8 +90,8 @@ double CherenkovRadiationModels::CoherentMyModel(double theta, TVector3 initialP
   // Build up an expression
   double bracketsExpr = 1/GetVelocity() - n * TMath::Cos(angleInParticleSystem)/c;
   double sinAndDenominator = TMath::Sin(angleInParticleSystem) * TMath::Sin(GetOmega() * stepLength * bracketsExpr / 2) / bracketsExpr;
-  double coefficient = electronCharge * n  / (TMath::Pi() * TMath::Power(c, 3) * TMath::Power(obsL, 2) );     
-  double resultPower = returnSquared ? coefficient * sinAndDenominator * sinAndDenominator : TMath::Sqrt(coefficient) * sinAndDenominator; // Divide by 2pi???
+  double coefficient = electronCharge * TMath::Sqrt(n)  / TMath::Sqrt(2 * TMath::Power(TMath::Pi() * c, 3)) / obsL;     
+  double resultPower = returnSquared ? coefficient * coefficient * sinAndDenominator * sinAndDenominator : TMath::Sqrt(coefficient) * sinAndDenominator; // Divide by 2pi???
   if (SI == true && returnSquared == true) resultPower *= SICoef;
 
   return resultPower;
@@ -203,11 +203,11 @@ std::vector<TVector3> CherenkovRadiationModels::ParseGeantFile(std::ifstream& st
 
   while (stream >> x && stream >> y && stream >> z){
     TVector3 tmp(0, 0, 0);
-    tmp.SetX(x);
+    tmp.SetX(x / 10);
     /// !!! Now only for 2D
-    tmp.SetY(0);  
+    tmp.SetY(y / 10);  
     /// !!!
-    tmp.SetZ(z);
+    tmp.SetZ(z / 10);
     allCoordinates.push_back(tmp);
   }
   return allCoordinates;
